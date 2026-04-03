@@ -12,7 +12,25 @@ Set-Alias t tmux
 Set-Alias c cls
 Set-Alias .. cd..
 
+Set-PSReadLineKeyHandler -Key Ctrl+f -ScriptBlock {
+    $dirs = @(
+        "$HOME",
+        "$HOME\dev",
+        "$HOME\.config"
+    )
 
+    $selected = $dirs | ForEach-Object {
+        Get-ChildItem $_ -Directory -Recurse -Depth 2 -ErrorAction SilentlyContinue
+    } | Select-Object -ExpandProperty FullName | fzf
+
+    if ($selected) {
+        # Insere o comando 'cd "caminho"; Clear-Host' no buffer
+        [Microsoft.PowerShell.PSConsoleReadLine]::Insert("cd `"$selected`"; Clear-Host")
+        [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+    }
+}
+
+<#
 Set-PSReadLineKeyHandler -Key Ctrl+f -ScriptBlock {
     $dirs = @(
         "$HOME",
@@ -28,7 +46,7 @@ Set-PSReadLineKeyHandler -Key Ctrl+f -ScriptBlock {
         [Microsoft.PowerShell.PSConsoleReadLine]::Insert("cd `"$selected`"")
         [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
     }
-}
+}#>
 
 function gpush {
     git add .
