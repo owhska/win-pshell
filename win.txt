@@ -16,6 +16,8 @@ Set-Alias t tmux
 Set-Alias c cls
 Set-Alias .. cd..
 
+function q { exit }
+
 Set-PSReadLineKeyHandler -Key Ctrl+f -ScriptBlock {
     $dirs = @(
         "$HOME",
