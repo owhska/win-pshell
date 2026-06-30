@@ -485,7 +485,7 @@ local function post_install_setup()
   end, { silent = true, desc = 'Open Opencode' })
   vim.keymap.set('n', '<leader>d', ':DiffviewOpen<CR>', { silent = true, desc = 'Diffview' })
   vim.keymap.set('n', '<leader>b', ':NvimTreeToggle<CR>', { silent = true, desc = 'Toggle NvimTree' })
-  vim.keymap.set('n', '<leader>j', ':tabprevious<CR>', { silent = true, desc = 'Tab anterior' })
+  vim.keymap.set('n', '<leader>h', ':tabprevious<CR>', { silent = true, desc = 'Tab anterior' })
   vim.keymap.set('n', '<leader>l', ':tabnext<CR>', { silent = true, desc = 'Próxima tab' })
 
   vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle)
