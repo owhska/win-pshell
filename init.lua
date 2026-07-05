@@ -38,7 +38,7 @@ vim.opt_local.laststatus = 0
 --vim.api.nvim_set_hl(0, "StatusLine", { bg = "none" })
 --vim.api.nvim_set_hl(0, "StatusLineNC", { bg = "none" })
 vim.g.mapleader = " "
-
+vim.opt.mouse = "a"
 vim.opt.clipboard = "unnamedplus"
 -- DESATIVAR STATUSLINE E RULER (informações no canto inferior direito)
 vim.opt_local.ruler = false       -- Remove informações de linha/coluna
