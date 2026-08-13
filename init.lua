@@ -41,6 +41,9 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt_local.ruler = false
 vim.opt_local.showmode = true
 
+vim.opt.timeoutlen = 300
+vim.opt.updatetime = 50
+
 vim.cmd([[
 function! Modified_Get()
     return &modified ? '[+]' : ''
@@ -385,17 +388,71 @@ local function post_install_setup()
 
   pcall(function()
       require('blink.cmp').setup({
+          -- 🔥 Aceitar com TAB e navegação com setas
           keymap = {
               preset = 'default',
               ['<C-Space>'] = { 'show', 'show_documentation', 'hide_documentation' },
+              ['<Tab>'] = { 'accept', 'fallback' },  -- TAB aceita a sugestão
+              ['<S-Tab>'] = { 'select_prev', 'fallback' },
+              ['<C-n>'] = { 'select_next', 'fallback' },
+              ['<C-p>'] = { 'select_prev', 'fallback' },
+              ['<C-e>'] = { 'hide' },
+              ['<C-y>'] = { 'accept' },
           },
 
+          -- ⚡ COMPLETION MAIS RÁPIDO
           completion = {
               documentation = {
-                  auto_show = false,
+                  auto_show = false,  -- Desativar docs automáticas para não atrasar
               },
               menu = {
                   auto_show = true,
+                  draw = {
+                      columns = { { "kind_icon" }, { "label", "label_description", gap = 1 } },
+                  },
+              },
+              -- Mostrar sugestões mais rápido
+              list = {
+                  max_items = 10,  -- Limitar itens para performance
+                  selection = {
+                      preselect = true,  -- Pré-selecionar o primeiro item
+                  },
+              },
+          },
+
+          -- ⚡ SOURCES MAIS RÁPIDOS
+          sources = {
+              default = { 'lsp', 'path', 'snippets', 'buffer' },
+              -- Cache para buffer e path (mais rápido)
+              providers = {
+                  lsp = {
+                      name = 'LSP',
+                      module = 'blink.cmp.sources.lsp',
+                      score_offset = 100,
+                  },
+                  path = {
+                      name = 'Path',
+                      module = 'blink.cmp.sources.path',
+                      score_offset = 10,
+                      opts = {
+                          trailing_slash = false,
+                          label = 'Path',
+                      },
+                  },
+                  buffer = {
+                      name = 'Buffer',
+                      module = 'blink.cmp.sources.buffer',
+                      score_offset = 5,
+                      opts = {
+                          min_keyword_length = 2,  -- Reduzir mínimo de caracteres
+                          max_entries = 100,        -- Limitar para performance
+                      },
+                  },
+                  snippets = {
+                      name = 'Snippets',
+                      module = 'blink.cmp.sources.snippets',
+                      score_offset = 15,
+                  },
               },
           },
 
@@ -403,16 +460,14 @@ local function post_install_setup()
               preset = 'default',
           },
 
-          sources = {
-              default = { 'lsp', 'path', 'snippets', 'buffer' },
-          },
-
           fuzzy = {
               implementation = 'prefer_rust_with_warning',
+              -- REMOVIDO: prefilter = true, -- Este campo não existe mais
           },
       })
   end)
 
+  -- 🔥 GARANTIR INSTALAÇÃO DO PYRIGHT E VTSLS
   require("mason-lspconfig").setup({
       ensure_installed = { 
           "lua_ls",
