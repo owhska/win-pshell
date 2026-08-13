@@ -1,7 +1,7 @@
-------------------------------------------------------------
----CONFIG OWHSKA
--- BOOTSTRAP PACKER
-------------------------------------------------------------
+if vim.loader then
+  vim.loader.enable()
+end
+
 local ensure_packer = function()
   local fn = vim.fn
   local install_path = fn.stdpath('data') .. '/site/pack/packer/start/packer.nvim'
@@ -35,13 +35,10 @@ vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 vim.opt_local.laststatus = 0
---vim.api.nvim_set_hl(0, "StatusLine", { bg = "none" })
---vim.api.nvim_set_hl(0, "StatusLineNC", { bg = "none" })
 vim.g.mapleader = " "
 vim.opt.mouse = "a"
 vim.opt.clipboard = "unnamedplus"
--- DESATIVAR STATUSLINE E RULER (informações no canto inferior direito)
-vim.opt_local.ruler = false       -- Remove informações de linha/coluna
+vim.opt_local.ruler = false
 vim.opt_local.showmode = true
 
 vim.cmd([[
@@ -90,6 +87,92 @@ local function setup_autopairs()
 end
 
 setup_autopairs()
+
+------------------------------------------------------------
+-- COMPILE / RUN (estilo M-x compile do Emacs)
+------------------------------------------------------------
+local compile_state = { bufnr = nil, last_cmd = nil }
+
+local function open_compile_buffer()
+  if compile_state.bufnr and vim.api.nvim_buf_is_valid(compile_state.bufnr) then
+    vim.bo[compile_state.bufnr].modifiable = true
+  else
+    compile_state.bufnr = vim.api.nvim_create_buf(false, true)
+    vim.bo[compile_state.bufnr].bufhidden = "hide"
+    vim.bo[compile_state.bufnr].buftype = "nofile"
+    vim.bo[compile_state.bufnr].filetype = "compilation"
+    vim.api.nvim_buf_set_name(compile_state.bufnr, "*compilation*")
+  end
+
+  local visible = false
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_get_buf(win) == compile_state.bufnr then
+      visible = true
+      break
+    end
+  end
+
+  if not visible then
+    vim.cmd("belowright 12split")
+    vim.api.nvim_win_set_buf(0, compile_state.bufnr)
+  end
+
+  return compile_state.bufnr
+end
+
+local function append_lines(bufnr, lines)
+  if not lines or #lines == 0 then return end
+  vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, lines)
+end
+
+local function run_compile(cmd)
+  compile_state.last_cmd = cmd
+  local bufnr = open_compile_buffer()
+
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "$ " .. cmd, "" })
+
+  vim.fn.jobstart(cmd, {
+    shell = true,
+    stdout_buffered = false,
+    stderr_buffered = false,
+    on_stdout = function(_, data)
+      if vim.api.nvim_buf_is_valid(bufnr) then append_lines(bufnr, data) end
+    end,
+    on_stderr = function(_, data)
+      if vim.api.nvim_buf_is_valid(bufnr) then append_lines(bufnr, data) end
+    end,
+    on_exit = function(_, code)
+      if not vim.api.nvim_buf_is_valid(bufnr) then return end
+      append_lines(bufnr, { "", "[processo finalizado, código " .. code .. "]" })
+
+      local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+      vim.fn.setqflist({}, ' ', {
+        title = cmd,
+        lines = lines,
+        efm = vim.o.errorformat,
+      })
+
+      -- Erro real = código de saída diferente de 0
+      local has_error = (code ~= 0)
+
+      if has_error then
+        local qf = vim.fn.getqflist()
+        for i, item in ipairs(qf) do
+          if item.valid == 1 then
+            -- Abre a quickfix e pula pro arquivo/linha do erro,
+            -- sem fechar o buffer de output
+            vim.cmd("copen")
+            vim.cmd("cc " .. i)
+            break
+          end
+        end
+        vim.notify("Compilação falhou (código " .. code .. ")", vim.log.levels.ERROR)
+      else
+        vim.notify("Compilação concluída com sucesso (código " .. code .. ")", vim.log.levels.INFO)
+      end
+    end,
+  })
+end
 
 ------------------------------------------------------------
 -- DASHBOARD PERSONALIZADO
@@ -150,15 +233,6 @@ local function setup_dashboard()
 
             -- Conteúdo do dashboard
             local logo = {
-                "/$$$$$$   /$$      /$$ /$$   /$$ ",
-                "| $$__  $$ | $$  /$ | $$| $$  | $$ ",
-                "| $$  \\ $$ | $$ /$$$| $$| $$  | $$ ",
-                "| $$  | $$ | $$/$$ $$ $$| $$$$$$$$ ",
-                "| $$  | $$ | $$$$_  $$$$| $$__  $$ ",
-                "| $$  | $$ | $$$/ \\  $$$| $$  | $$ ",
-                "| $$$$$$$/ | $$/   \\  $$| $$  | $$ ",
-                "|_______/  |__/     \\__/|__/  |__/ ",
-                "                                    ",
             }
 
             local menu = {
@@ -241,7 +315,6 @@ require('packer').startup(function(use)
   }
   use { 'tahayvr/matteblack.nvim', as = 'matteblack' }
   use 'xero/miasma.nvim'
-  use 'windwp/nvim-autopairs'
   use {
       'nvim-treesitter/nvim-treesitter',
       run = function()
@@ -251,23 +324,18 @@ require('packer').startup(function(use)
   use 'mbbill/undotree'
   use 'tpope/vim-fugitive'
   use 'neovim/nvim-lspconfig'
-  use 'hrsh7th/nvim-cmp'
-  use 'hrsh7th/cmp-nvim-lsp'
-  use 'hrsh7th/cmp-buffer'
-  use 'hrsh7th/cmp-path'
-  use 'hrsh7th/cmp-nvim-lua'
-  use 'saadparwaiz1/cmp_luasnip'
-  use 'L3MON4D3/LuaSnip'
+  use {
+      'saghen/blink.cmp',
+      tag = 'v1.10.1',
+      requires = { 'rafamadriz/friendly-snippets' },
+  }
   use 'rose-pine/neovim'
-  use 'rafamadriz/friendly-snippets'
   use 'theprimeagen/harpoon'
-  use 'kepano/flexoki-neovim'
-  use "blazkowolf/gruber-darker.nvim"
-  use "yorumicolors/yorumi.nvim"
-  use "ThorstenRhau/token"
-  use "Verf/deepwhite.nvim"
-  use "nickkadutskyi/jb.nvim"
   use "sindrets/diffview.nvim"
+
+  use "folke/which-key.nvim"
+
+  use 'dchinmay2/alabaster.nvim'
 
   use {
       'nvim-tree/nvim-tree.lua',
@@ -316,54 +384,46 @@ local function post_install_setup()
   end)
 
   pcall(function()
-      local cmp = require('cmp')
-      local luasnip = require('luasnip')
-
-      local capabilities = vim.lsp.protocol.make_client_capabilities()
-      capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
-
-      cmp.setup({
-          snippet = {
-              expand = function(args)
-                  luasnip.lsp_expand(args.body)
-              end,
+      require('blink.cmp').setup({
+          keymap = {
+              preset = 'default',
+              ['<C-Space>'] = { 'show', 'show_documentation', 'hide_documentation' },
           },
-          window = {                                          -- <-- adicione aqui
-              completion = cmp.config.window.bordered({
-                  winhighlight = "Normal:Pmenu,FloatBorder:DialogFloatBorder,CursorLine:PmenuSel,Search:None",
-              }),
-              documentation = cmp.config.window.bordered({
-                  winhighlight = "Normal:Pmenu,FloatBorder:DialogFloatBorder,CursorLine:PmenuSel,Search:None",
-              }),
+
+          completion = {
+              documentation = {
+                  auto_show = false,
+              },
+              menu = {
+                  auto_show = true,
+              },
           },
-          mapping = cmp.mapping.preset.insert({
-              ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-              ['<C-f>'] = cmp.mapping.scroll_docs(4),
-              ['<C-Space>'] = cmp.mapping.complete(),
-              ['<C-e>'] = cmp.mapping.abort(),
-              ['<CR>'] = cmp.mapping.confirm({ select = true }),
-              ['<Tab>'] = cmp.mapping.select_next_item(),
-              ['<S-Tab>'] = cmp.mapping.select_prev_item(),
-          }),
-          sources = cmp.config.sources({
-              { name = 'nvim_lsp' },
-              { name = 'nvim_lua' },
-              { name = 'luasnip' },
-              { name = 'buffer' },
-              { name = 'path' },
-          }),
+
+          snippets = {
+              preset = 'default',
+          },
+
+          sources = {
+              default = { 'lsp', 'path', 'snippets', 'buffer' },
+          },
+
+          fuzzy = {
+              implementation = 'prefer_rust_with_warning',
+          },
       })
-
-      require('luasnip.loaders.from_vscode').lazy_load()
   end)
 
   require("mason-lspconfig").setup({
-      ensure_installed = { "lua_ls" },
+      ensure_installed = { 
+          "lua_ls",
+          "pyright",        -- Python LSP
+          "vtsls",          -- TypeScript/JavaScript LSP (mais completo que tsserver)
+      },
+      automatic_installation = true, -- Instala automaticamente se não estiver presente
   })
 
   local lspconfig = require("lspconfig")
-  local capabilities = require("cmp_nvim_lsp")
-    .default_capabilities(vim.lsp.protocol.make_client_capabilities())
+  local capabilities = require('blink.cmp').get_lsp_capabilities()
 
   require("mason-lspconfig").setup_handlers({
       function(server_name)
@@ -393,6 +453,53 @@ local function post_install_setup()
               },
           })
       end,
+
+      -- Configuração específica para pyright (opcional)
+      ["pyright"] = function()
+          lspconfig.pyright.setup({
+              capabilities = capabilities,
+              settings = {
+                  python = {
+                      analysis = {
+                          typeCheckingMode = "basic",
+                          autoSearchPaths = true,
+                          useLibraryCodeForTypes = true,
+                      },
+                  },
+              },
+          })
+      end,
+
+      -- Configuração específica para vtsls (opcional)
+      ["vtsls"] = function()
+          lspconfig.vtsls.setup({
+              capabilities = capabilities,
+              settings = {
+                  typescript = {
+                      inlayHints = {
+                          includeInlayParameterNameHints = 'all',
+                          includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+                          includeInlayFunctionParameterTypeHints = true,
+                          includeInlayVariableTypeHints = true,
+                          includeInlayPropertyDeclarationTypeHints = true,
+                          includeInlayFunctionLikeReturnTypeHints = true,
+                          includeInlayEnumMemberValueHints = true,
+                      },
+                  },
+                  javascript = {
+                      inlayHints = {
+                          includeInlayParameterNameHints = 'all',
+                          includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+                          includeInlayFunctionParameterTypeHints = true,
+                          includeInlayVariableTypeHints = true,
+                          includeInlayPropertyDeclarationTypeHints = true,
+                          includeInlayFunctionLikeReturnTypeHints = true,
+                          includeInlayEnumMemberValueHints = true,
+                      },
+                  },
+              },
+          })
+      end,
   })
 
   pcall(function()
@@ -410,7 +517,7 @@ local function post_install_setup()
 
   pcall(function()
       require('nvim-tree').setup({
-          disable_netrw = false,   -- deixa o netrw vivo
+         disable_netrw = false,   -- deixa o netrw vivo
           hijack_netrw = false,    -- não sequestra
           hijack_directories = {
               enable = false,      -- não abre ao entrar em diretório
@@ -450,8 +557,80 @@ local function post_install_setup()
       })
   end)
 
+  pcall(function()
+      local wk = require("which-key")
+      wk.setup({
+          preset = "helix", -- modern classic
+          delay = 300,
+      })
+
+      wk.add({
+          -- Grupos principais
+          { "<leader>w", group = "window/write" },
+          { "<leader>g", group = "git" },
+          { "<leader>v", group = "lsp" },
+
+          -- Write / quit / arquivo
+          { "<leader>ww", desc = "Write file" },
+          { "<leader>wq", desc = "Quit" },
+          { "<leader>q",  desc = "Close tab" },
+          { "<leader>e",  desc = "Explorer (netrw)" },
+          { "<leader>n",  desc = "New file" },
+          -- 
+          -- Splits e navegação de janela
+          { "<leader>wv", desc = "Vertical split" },
+          { "<leader>ws", desc = "Horizontal split" },
+          { "<leader>wh", desc = "Go to left window" },
+          { "<leader>wj", desc = "Go to below window" },
+          { "<leader>wk", desc = "Go to above window" },
+          { "<leader>wl", desc = "Go to right window" },
+          -- 
+          -- Terminal / ferramentas externas
+          { "<leader>t", desc = "Open terminal split (zsh)" },
+          { "<leader>i", desc = "Open agy in vsplit" },
+          { "<leader>o", desc = "Open opencode in vsplit" },
+          -- 
+          -- -- Diffview / NvimTree / Undotree
+          { "<leader>d", desc = "Diffview open" },
+          { "<leader>b", desc = "Toggle NvimTree" },
+          { "<leader>u", desc = "Toggle Undotree" },
+          -- 
+          -- Tabs
+          { "<leader><Tab>",   desc = "Next tab" },
+          { "<leader><S-Tab>", desc = "Previous tab" },
+          { "<leader>N", desc = "New tab" },
+          -- 
+          -- Git (fugitive + fzf-lua)
+          { "<leader>gt", desc = "Git status (fugitive)" },
+          { "<leader>gl", desc = "Git log (fzf-lua)" },
+          { "<leader>gs", desc = "Git status (fzf-lua)" },
+          { "<leader>gd", desc = "Git branches (fzf-lua)" },
+          { "<leader>gb", desc = "Git file history (fzf-lua)" },
+          { "<leader>gg", desc = "Git Grep (fzf-lua)" },
+          -- 
+          -- -- LSP
+          { "<leader>vww", desc = "Workspace symbol" },
+          { "<leader>vd",  desc = "Open diagnostic float" },
+          { "<leader>vca", desc = "Code action" },
+          { "<leader>vr",  desc = "LSP references" },
+          { "<leader>vrn", desc = "LSP rename" },
+          -- 
+          -- FZF (fora do grupo leader-w/g/v)
+          { "<leader>f", desc = "FZF find files" },
+          { "<leader>z", desc = "Live grep" },
+          { "<leader>s", desc = "Fuzzy find in current buffer" },
+          { "<leader>a", desc = "Harpoon: add file" },
+          { "<leader>1", desc = "Harpoon: file 1" },
+          { "<leader>2", desc = "Harpoon: file 2" },
+          { "<leader>3", desc = "Harpoon: file 3" },
+          { "<leader>4", desc = "Harpoon: file 4" },
+          -- 
+          -- Comment toggle (modo visual)
+          { "<leader>m", desc = "Toggle comment", mode = "v" },
+      })
+  end)
+
   -- Cores
-  --vim.cmd('colorscheme matteblack')
   vim.cmd('hi statusline guibg=NONE')
 
 
@@ -460,6 +639,7 @@ local function post_install_setup()
   vim.keymap.set('n', '<leader>wq', ':quit<CR>')
   vim.keymap.set('n', '<leader>e', vim.cmd.Ex)
   vim.keymap.set('n', '<leader>n', ':enew<CR>', { desc = 'New File' })
+  vim.keymap.set('n', '<leader>q', ':tabclose<CR>')
 
   vim.keymap.set('n', '<leader>wv', ':vsplit<CR>', { silent = true })
   vim.keymap.set('n', '<leader>ws', ':split<CR>', { silent = true })
@@ -470,23 +650,27 @@ local function post_install_setup()
   vim.keymap.set('n', '<leader>wl', '<C-w>l')
 
   vim.keymap.set('n', '<leader>t', ':belowright 12split term://Powershell<CR>', { silent = true })
-  -- vim.keymap.set('n', '<leader>i', function()
-      -- vim.cmd('vsplit')
-      -- vim.cmd('wincmd l')
-      -- vim.cmd('terminal cmd.exe /k opencode.cmd')
-      -- vim.cmd('startinsert')
-  -- end, { silent = true, desc = 'Open Opencode' })
   vim.keymap.set('n', '<leader>i', function()
       vim.cmd('vsplit')
       vim.cmd('wincmd l')
       vim.cmd('vertical resize 50')
-      vim.cmd('terminal cmd.exe /k opencode.cmd')
-      vim.cmd('startinsert')
-  end, { silent = true, desc = 'Open Opencode' })
+      vim.cmd('terminal cmd.exe /k agy')
+  end, { silent = true, desc = 'Open CLI' })
   vim.keymap.set('n', '<leader>d', ':DiffviewOpen<CR>', { silent = true, desc = 'Diffview' })
   vim.keymap.set('n', '<leader>b', ':NvimTreeToggle<CR>', { silent = true, desc = 'Toggle NvimTree' })
   vim.keymap.set('n', '<leader><Tab>', ':tabnext<CR>', { silent = true, desc = 'Next tab' })
   vim.keymap.set('n', '<leader><S-Tab>', ':tabprevious<CR>', { silent = true, desc = 'Last tab' })
+  vim.keymap.set('n', '<leader>N', ':tabnew<CR>', { silent = true, desc = 'New tab' })
+  vim.keymap.set('n', '<leader>cc', function()
+      local input = vim.fn.input("Compile command: ", compile_state.last_cmd or "")
+      if input and input ~= "" then
+          run_compile(input)
+      end
+  end, { silent = true, desc = "Compile/Run project" })
+
+  vim.keymap.set('n', ']e', ':cnext<CR>zz', { silent = true, desc = "Next error" })
+  vim.keymap.set('n', '[e', ':cprevious<CR>zz', { silent = true, desc = "Previous error" })
+  vim.keymap.set('n', '<leader>co', ':copen<CR>', { silent = true, desc = "Open quickfix" })
 
   vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle)
   vim.keymap.set('n', '<leader>gt', vim.cmd.Git)
@@ -526,9 +710,20 @@ local function post_install_setup()
       require('fzf-lua').files()
   end, { desc = 'FZF Files' })
 
-  vim.keymap.set('n', '<leader>/', function()
+  vim.keymap.set('n', '<leader>z', function()
       require('fzf-lua').live_grep()
-  end, { desc = 'FZF Grep' })
+  end, { desc = 'Live grep' })
+
+  vim.keymap.set('n', '<leader>s', function()
+      require('fzf-lua').blines()
+  end, { desc = 'Fuzzy find in current buffer' })
+
+  vim.keymap.set('n', '<leader>gg', function()
+      require('fzf-lua').live_grep({
+          cmd = "git grep --line-number --column --color=always",
+          prompt = 'GitGrep❯ ',
+      })
+  end, { desc = 'Live Grep (git files only)' })
 
   vim.keymap.set("v", "<leader>m", function()
       local cs = vim.bo.commentstring
@@ -609,35 +804,44 @@ else
   post_install_setup()
 end
 
-require('rose-pine').setup({
-  styles = {
-    italic = false,
-  },
-})
+local function remove_all_italics()
+  for _, group in ipairs(vim.fn.getcompletion('', 'highlight')) do
+    local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group })
+    if ok and hl and hl.italic then
+      hl.italic = false
+      pcall(vim.api.nvim_set_hl, 0, group, hl)
+    end
+  end
+end
 
 function ColorMyPencils(color)
-  --color = color or "matteblack"
-  --color = color or "yorumi"
-  --color = color or "token"
-  color = color or "jb"
-  --color = color or "deepwhite"
-  --color = color or "paramount"
-  --color = color or "rose-pine"
-  --color = color or "flexoki"
-  --color = color or "gruber-darker"
+  color = color or "alabaster"
+  --color = color or "tema"
 
   local ok = pcall(vim.cmd.colorscheme, color)
   if not ok then
     return
   end
 
+  remove_all_italics()
 
-  --vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-  --vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+  vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+  vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
   vim.api.nvim_set_hl(0, "LineNr", { fg = "#b5b5b5" })
+  vim.api.nvim_set_hl(0, "MsgArea", { bg = "none" })
 
- -- vim.api.nvim_set_hl(0, "StatusLine", { bg = "none" })
- -- vim.api.nvim_set_hl(0, "StatusLineNC", { bg = "none" })
+  vim.api.nvim_set_hl(0, "TabLine", { bg = "none" })
+  vim.api.nvim_set_hl(0, "TabLineFill", { bg = "none" })
+  vim.api.nvim_set_hl(0, "WinSeparator", { bg = "none" })
+  vim.api.nvim_set_hl(0, "EndOfBuffer", { bg = "none" })
+  vim.api.nvim_set_hl(0, "Pmenu", { bg = "none" })
+  vim.api.nvim_set_hl(0, "SignColumn", { bg = "none" })
+  vim.api.nvim_set_hl(0, "FoldColumn", { bg = "none" })
+  vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+  vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+  vim.api.nvim_set_hl(0, "LineNr", { fg = "#b5b5b5" })
+  vim.api.nvim_set_hl(0, "MsgArea", { bg = "none" })
+
 end
 
 ColorMyPencils()
