@@ -1,7 +1,4 @@
-if vim.loader then
-  vim.loader.enable()
-end
-
+if vim.loader then vim.loader.enable() end
 local ensure_packer = function()
   local fn = vim.fn
   local install_path = fn.stdpath('data') .. '/site/pack/packer/start/packer.nvim'
@@ -40,6 +37,8 @@ vim.opt.mouse = "a"
 vim.opt.clipboard = "unnamedplus"
 vim.opt_local.ruler = false
 vim.opt_local.showmode = true
+vim.opt.swapfile = false
+vim.opt.backup = false
 
 vim.opt.timeoutlen = 300
 vim.opt.updatetime = 50
@@ -54,6 +53,50 @@ vim.o.statusline = " [FILENAME: %t] %= [TYPE: %Y] [LINE: %l/%L : %c] [%p%%] %{Mo
 vim.o.laststatus = 2
 vim.o.shortmess = vim.o.shortmess .. "atI"
 vim.o.cmdheight = 1
+
+------------------------------------------------------------
+-- WINBAR: caminho completo (esquerda) + branch/modo (direita)
+------------------------------------------------------------
+-- local function get_git_branch()
+  -- local ok, branch = pcall(vim.fn.FugitiveHead)
+  -- if ok and branch and branch ~= "" then
+    -- return "" .. branch
+  -- end
+  -- return ""
+-- end
+-- 
+-- local mode_map = {
+  -- n = "NORMAL", i = "INSERT", v = "VISUAL", V = "V-LINE",
+  -- ["\22"] = "V-BLOCK", c = "COMMAND", R = "REPLACE", t = "TERMINAL",
+-- }
+-- 
+-- local function get_mode()
+  -- return mode_map[vim.fn.mode()] or vim.fn.mode()
+-- end
+-- 
+-- -- filetypes onde o winbar NÃO deve aparecer
+-- local winbar_excluded_ft = {
+  -- NvimTree = true,
+  -- ["neo-tree"] = true,
+  -- help = true,
+  -- dashboard = true,
+  -- qf = true,
+-- }
+-- 
+-- function _G.MyWinbar()
+  -- if winbar_excluded_ft[vim.bo.filetype] then
+    -- return ""
+  -- end
+  -- return string.format(" %%F%%=%s │ %s ", get_git_branch(), get_mode())
+-- end
+-- 
+-- vim.o.winbar = "%{%v:lua.MyWinbar()%}"
+-- 
+-- vim.api.nvim_create_autocmd({ "ModeChanged", "BufEnter", "WinEnter" }, {
+  -- callback = function()
+    -- vim.cmd("redrawstatus")
+  -- end,
+-- })
 
 ------------------------------------------------------------
 -- AUTOPAIRS NATIVO (INDEPENDENTE DE PLUGINS)
@@ -287,13 +330,13 @@ local function setup_dashboard()
                             vim.cmd.Ex()
                         end, opts)
 
-            -- Buscar arquivos (usando fzf-lua)
+            -- Buscar arquivos (usando fff.nvim)
             vim.keymap.set("n", "f", function()
                 restore_cursor()
-                if pcall(require, 'fzf-lua') then
-                    require('fzf-lua').files()
+                if pcall(require, 'fff') then
+                    require('fff').find_files()
                 else
-                    vim.notify("FZF-Lua não está carregado", vim.log.levels.WARN)
+                    vim.notify("FFF.nvim não está carregado", vim.log.levels.WARN)
                 end
             end, opts)
 
@@ -311,6 +354,12 @@ require('packer').startup(function(use)
   use {
       'ibhagwan/fzf-lua',
       requires = { 'nvim-lua/plenary.nvim' },
+  }
+  use {
+      'dmtrKovalenko/fff.nvim',
+      run = function()
+          require('fff.download').download_or_build_binary()
+      end,
   }
   use {
       'williamboman/mason.nvim',
@@ -339,6 +388,8 @@ require('packer').startup(function(use)
   use "folke/which-key.nvim"
 
   use 'dchinmay2/alabaster.nvim'
+
+  use 'craftzdog/solarized-osaka.nvim'
 
   use {
       'nvim-tree/nvim-tree.lua',
@@ -373,11 +424,23 @@ local function post_install_setup()
               col = 0.5,
               border = 'rounded',
           },
-          files = {
-              prompt = 'Files❯ ',
-          },
-          grep = {
-              prompt = 'Grep❯ ',
+      })
+  end)
+
+  pcall(function()
+      require('fff').setup({
+          base_path = vim.fn.getcwd(),
+          prompt = '🪿 ',
+          title = 'FFFiles',
+          max_results = 100,
+          max_threads = 4,
+          lazy_sync = true,
+          layout = {
+              height = 0.8,
+              width = 0.8,
+              prompt_position = 'bottom',
+              preview_position = 'right',
+              preview_size = 0.5,
           },
       })
   end)
@@ -400,7 +463,7 @@ local function post_install_setup()
               ['<C-y>'] = { 'accept' },
           },
 
-          -- ⚡ COMPLETION MAIS RÁPIDO
+          -- ⚡ COMPLETION MAIS RÁPIDO (SEM EMOJIS)
           completion = {
               documentation = {
                   auto_show = false,  -- Desativar docs automáticas para não atrasar
@@ -408,7 +471,10 @@ local function post_install_setup()
               menu = {
                   auto_show = true,
                   draw = {
-                      columns = { { "kind_icon" }, { "label", "label_description", gap = 1 } },
+                      -- 🔥 REMOVER ÍCONES - mostrar apenas label e descrição
+                      columns = { 
+                          { "label", "label_description", gap = 1 } 
+                      },
                   },
               },
               -- Mostrar sugestões mais rápido
@@ -462,7 +528,6 @@ local function post_install_setup()
 
           fuzzy = {
               implementation = 'prefer_rust_with_warning',
-              -- REMOVIDO: prefilter = true, -- Este campo não existe mais
           },
       })
   end)
@@ -558,6 +623,17 @@ local function post_install_setup()
   })
 
   pcall(function()
+      require('fff').setup({
+          prompt = '> ',
+          layout = {
+              height = 0.85,
+              width = 0.85,
+              prompt_position = 'top', -- deixa o campo de busca no topo, como no fzf-lua
+          },
+      })
+  end)
+
+  pcall(function()
       local mark = require("harpoon.mark")
       local ui = require("harpoon.ui")
 
@@ -578,8 +654,9 @@ local function post_install_setup()
               enable = false,      -- não abre ao entrar em diretório
           },
           view = {
-              width = 30,
+              width = 50,
               side = 'left',
+              --side = 'right',
           },
           filters = {
               dotfiles = false,
@@ -670,10 +747,10 @@ local function post_install_setup()
           { "<leader>vr",  desc = "LSP references" },
           { "<leader>vrn", desc = "LSP rename" },
           -- 
-          -- FZF (fora do grupo leader-w/g/v)
-          { "<leader>f", desc = "FZF find files" },
-          { "<leader>z", desc = "Live grep" },
-          { "<leader>s", desc = "Fuzzy find in current buffer" },
+          -- FFF / FZF (fora do grupo leader-w/g/v)
+          { "<leader>f", desc = "FFF find files" },
+          { "<leader>z", desc = "FFF live grep" },
+          { "<leader>s", desc = "Fuzzy find in current buffer (fzf-lua)" },
           { "<leader>a", desc = "Harpoon: add file" },
           { "<leader>1", desc = "Harpoon: file 1" },
           { "<leader>2", desc = "Harpoon: file 2" },
@@ -761,13 +838,94 @@ local function post_install_setup()
   vim.keymap.set("n", "<leader>rr",vim.lsp.buf.rename)
   vim.keymap.set("i", "<C-h>",  vim.lsp.buf.signature_help)
 
+  --vim.keymap.set("n", "<C-x>", '<cmd>!fzf<CR>')
+
+  --Nao oculta ngm
+  -- vim.keymap.set("n", "<C-x>", function()
+      -- require("fzf-lua").fzf_exec(
+          -- "fd --type d --hidden . " .. vim.fn.shellescape(vim.fn.expand("$HOME")),
+          -- {
+              -- prompt = "Directories> ",
+              -- actions = {
+                  -- ["default"] = function(selected)
+                      -- local dir = selected[1]
+-- 
+                      -- if dir then
+                          -- dir = vim.fn.trim(dir)
+                          -- vim.cmd("cd " .. vim.fn.fnameescape(dir))
+                          -- vim.cmd("edit .")
+                      -- end
+                  -- end,
+              -- },
+          -- }
+      -- )
+  -- end)
+
+  --Oculta o diretorios ocultos
+  -- vim.keymap.set("n", "<C-x>", function()
+      -- require("fzf-lua").fzf_exec(
+          -- "fd --type d . " .. vim.fn.shellescape(vim.fn.expand("$HOME")),
+          -- {
+              -- prompt = "Directories> ",
+              -- actions = {
+                  -- ["default"] = function(selected)
+                      -- if selected[1] then
+                          -- vim.cmd.cd(vim.fn.fnameescape(vim.fn.trim(selected[1])))
+                          -- vim.cmd.edit(".")
+                      -- end
+                  -- end,
+              -- },
+          -- }
+      -- )
+  -- end)
+
+  --Oculta todos os ocultos menos o .config
+  vim.keymap.set("n", "<C-x>", function()
+      local home = vim.fn.expand("$HOME")
+
+      local dirs = vim.fn.systemlist(
+          "fd --type d --exclude '.*' . " .. vim.fn.shellescape(home)
+      )
+
+      local config_dirs = vim.fn.systemlist(
+          "fd --type d --hidden . " .. vim.fn.shellescape(home .. "\\.config")
+      )
+
+      vim.list_extend(dirs, config_dirs)
+
+      require("fzf-lua").fzf_exec(dirs, {
+          prompt = "Directories> ",
+          fzf_opts = {
+              ["--height"] = "100%",
+              ["--layout"] = "reverse",
+              ["--border"] = "rounded",
+          },
+          actions = {
+              ["default"] = function(selected)
+                  local dir = selected[1]
+
+                  if not dir or dir == "" then
+                      return
+                  end
+
+                  vim.fn.chdir(vim.fn.trim(dir))
+                  vim.cmd.edit(".")
+              end,
+          },
+      })
+  end)
+
+  vim.keymap.set('n', '<leader>x', function()
+    require('fff').find_files()
+  end, { desc = 'FFF Find Files' })
+
   vim.keymap.set('n', '<leader>f', function()
-      require('fzf-lua').files()
+    require('fzf-lua').files()
   end, { desc = 'FZF Files' })
 
   vim.keymap.set('n', '<leader>z', function()
-      require('fzf-lua').live_grep()
-  end, { desc = 'Live grep' })
+      require('fff').live_grep()
+  end, { desc = 'FFF Live grep' })
 
   vim.keymap.set('n', '<leader>s', function()
       require('fzf-lua').blines()
@@ -870,7 +1028,10 @@ local function remove_all_italics()
 end
 
 function ColorMyPencils(color)
-  color = color or "alabaster"
+  --color = color or "rose-pine"
+  --color = color or "gru"
+  --color = color or "alabaster"
+  color = color or "solarized-osaka"
   --color = color or "tema"
 
   local ok = pcall(vim.cmd.colorscheme, color)
