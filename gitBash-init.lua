@@ -418,6 +418,8 @@ require('packer').startup(function(use)
 
   use 'martinsione/darkplus.nvim'
 
+  use 'Mofiqul/vscode.nvim'
+
   use {
       'nvim-tree/nvim-tree.lua',
       requires = { 'nvim-tree/nvim-web-devicons' },
@@ -1035,7 +1037,9 @@ local function remove_all_italics()
 end
 
 function ColorMyPencils(color)
-  color = color or "alabaster"
+  color = color or "vscode"
+  --color = color or "darkplus"
+  --color = color or "alabaster"
   --color = color or "tema"
 
   local ok = pcall(vim.cmd.colorscheme, color)
