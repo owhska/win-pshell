@@ -911,76 +911,96 @@ local function post_install_setup()
   end, { desc = "toggle comentário na seleção" })
 
   ------------------------------------------------------------
-  -- Seletor de diretórios (<C-x> no diretório atual, <leader>z em nova tab)
+  -- Seletor de diretórios (<C-x> no diretório atual, <leader>x em nova tab)
   ------------------------------------------------------------
   local dirs_cache = nil
 
-  local function open_dir_picker(new_tab)
+  local function populate_cache(callback)
       local home = vim.fn.expand("$HOME")
+      local config = home .. "/.config"
 
-      if not dirs_cache then
-          dirs_cache = {}
+      local dirs = {}
+      local pending = vim.uv.fs_stat(config) and 2 or 1
 
-          local function scan(path, include_hidden)
-              for name, type in vim.fs.dir(path) do
-                  if type == "directory" then
-                      local hidden = name:sub(1, 1) == "."
-
-                      if include_hidden or not hidden then
-                          local dir = path .. "/" .. name
-                          dirs_cache[#dirs_cache + 1] = dir
-                          scan(dir, include_hidden)
-                      end
-                  end
+      local function done()
+          pending = pending - 1
+          if pending == 0 then
+              dirs_cache = dirs
+              if callback then
+                  callback()
               end
-          end
-
-          scan(home, false)
-
-          local config = home .. "/.config"
-
-          if vim.uv.fs_stat(config) then
-              dirs_cache[#dirs_cache + 1] = config
-              scan(config, true)
           end
       end
 
-      require("fzf-lua").fzf_exec(dirs_cache, {
-          prompt = "Dirs> ",
-          fzf_opts = {
-              ["--height"] = "100%",
-              ["--layout"] = "reverse",
-              ["--border"] = "none",
-              ["--margin"] = "0",
-              ["--padding"] = "0",
-          },
-          actions = {
-              ["default"] = function(selected)
-                  local dir = selected[1]
+      local function collect(result)
+          if result.code == 0 and result.stdout then
+              for line in result.stdout:gmatch("[^\r\n]+") do
+                  dirs[#dirs + 1] = line
+              end
+          end
+          vim.schedule(done)
+      end
 
-                  if not dir or dir == "" then
-                      return
-                  end
+      vim.system(
+          { "fd", "--type", "d", "--exclude", ".*", ".", home },
+          { text = true },
+          collect
+      )
 
-                  local target = vim.fn.fnameescape(vim.fn.trim(dir))
+      if vim.uv.fs_stat(config) then
+          vim.system(
+              { "fd", "--type", "d", "--hidden", ".", config },
+              { text = true },
+              collect
+          )
+      end
+  end
 
-                  if new_tab then
-                      vim.cmd.tabnew()
-                      vim.cmd.tcd(target)
-                  else
-                      vim.cmd.cd(target)
-                  end
+  -- dispara o scan em background assim que o Neovim inicia
+  vim.schedule(function()
+      populate_cache()
+  end)
 
-                  vim.cmd.edit(".")
-              end,
-          },
-      })
+  local function open_dir_picker(new_tab)
+      local function show()
+          require("fzf-lua").fzf_exec(dirs_cache, {
+              prompt = "Dirs> ",
+              fzf_opts = {
+                  ["--height"] = "100%",
+                  ["--layout"] = "reverse",
+                  ["--border"] = "none",
+                  ["--margin"] = "0",
+                  ["--padding"] = "0",
+              },
+              actions = {
+                  ["default"] = function(selected)
+                      local dir = selected[1]
+                      if not dir or dir == "" then
+                          return
+                      end
+                      local target = vim.fn.fnameescape(vim.fn.trim(dir))
+                      if new_tab then
+                          vim.cmd.tabnew()
+                          vim.cmd.tcd(target)
+                      else
+                          vim.cmd.cd(target)
+                      end
+                      vim.cmd.edit(".")
+                  end,
+              },
+          })
+      end
+
+      if dirs_cache then
+          show()
+      else
+          populate_cache(show)
+      end
   end
 
   vim.keymap.set("n", "<C-x>", function()
       open_dir_picker(false)
   end, { desc = "Open directory (current tab)" })
-
   vim.keymap.set("n", "<leader>x", function()
       open_dir_picker(true)
   end, { desc = "Open directory (new tab)" })
