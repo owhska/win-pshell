@@ -99,6 +99,73 @@ vim.o.cmdheight = 1
 -- })
 
 ------------------------------------------------------------
+-- TABLINE PERSONALIZADA
+-- Formato: "dirRepo - nomeArquivo"
+-- Em Diffview: "Diff: dirRepo"
+------------------------------------------------------------
+local function get_repo_name(cwd)
+    local dir = cwd
+    while dir and dir ~= "" do
+        if vim.uv.fs_stat(dir .. "/.git") then
+            return vim.fn.fnamemodify(dir, ":t")
+        end
+        local parent = vim.fn.fnamemodify(dir, ":h")
+        if parent == dir then break end
+        dir = parent
+    end
+    return vim.fn.fnamemodify(cwd, ":t")
+end
+
+local function is_diffview_tab(tabnr)
+    local ok, tabid = pcall(function() return vim.api.nvim_list_tabpages()[tabnr] end)
+    if not ok or not tabid then return false end
+
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabid)) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        local ft = vim.bo[buf].filetype
+        if ft:match("^Diffview") then
+            return true
+        end
+    end
+
+    return false
+end
+
+function _G.NvimTabLine()
+    local s = ""
+
+    for i = 1, vim.fn.tabpagenr("$") do
+        local winnr = vim.fn.tabpagewinnr(i)
+        local buflist = vim.fn.tabpagebuflist(i)
+        local bufnr = buflist[winnr]
+        local cwd = vim.fn.getcwd(-1, i)
+        local repo = get_repo_name(cwd)
+
+        local label
+        if is_diffview_tab(i) then
+            label = "Diff: " .. repo
+        else
+            local fname = vim.fn.bufname(bufnr)
+            fname = (fname ~= "" and vim.fn.fnamemodify(fname, ":t")) or "[No Name]"
+            label = repo .. " - " .. fname
+        end
+
+        if i == vim.fn.tabpagenr() then
+            s = s .. "%#TabLineSel#"
+        else
+            s = s .. "%#TabLine#"
+        end
+
+        s = s .. "%" .. i .. "T" .. " " .. label .. " "
+    end
+
+    s = s .. "%#TabLineFill#"
+    return s
+end
+
+vim.o.tabline = "%!v:lua.NvimTabLine()"
+
+------------------------------------------------------------
 -- AUTOPAIRS NATIVO (INDEPENDENTE DE PLUGINS)
 ------------------------------------------------------------
 local function setup_autopairs()
@@ -749,6 +816,7 @@ local function post_install_setup()
           -- 
           -- FFF / FZF (fora do grupo leader-w/g/v)
           { "<leader>f", desc = "FFF find files" },
+          { "<leader>x", desc = "Open directory (new tab)" },
           { "<leader>z", desc = "FFF live grep" },
           { "<leader>s", desc = "Fuzzy find in current buffer (fzf-lua)" },
           { "<leader>a", desc = "Harpoon: add file" },
@@ -880,44 +948,162 @@ local function post_install_setup()
   -- end)
 
   --Oculta todos os ocultos menos o .config
-  vim.keymap.set("n", "<C-x>", function()
-      local home = vim.fn.expand("$HOME")
+  -- vim.keymap.set("n", "<C-x>", function()
+      -- local home = vim.fn.expand("$HOME")
+-- 
+      -- local dirs = vim.fn.systemlist(
+          -- "fd --type d --exclude '.*' . " .. vim.fn.shellescape(home)
+      -- )
+-- 
+      -- local config_dirs = vim.fn.systemlist(
+          -- "fd --type d --hidden . " .. vim.fn.shellescape(home .. "\\.config")
+      -- )
+-- 
+      -- vim.list_extend(dirs, config_dirs)
+-- 
+      -- require("fzf-lua").fzf_exec(dirs, {
+          -- prompt = "Dirs> ",
+          -- fzf_opts = {
+              -- ["--height"] = "100%",
+              -- ["--layout"] = "reverse",
+              -- ["--border"] = "none",
+              -- ["--margin"] = "0",
+              -- ["--padding"] = "0",
+          -- },
+          -- actions = {
+              -- ["default"] = function(selected)
+                  -- local dir = selected[1]
+-- 
+                  -- if not dir or dir == "" then
+                      -- return
+                  -- end
+-- 
+                  -- vim.fn.chdir(vim.fn.trim(dir))
+                  -- vim.cmd.edit(".")
+              -- end,
+          -- },
+      -- })
+  -- end)
 
+  local function open_dir_picker(new_tab)
+      local home = vim.fn.expand("$HOME")
       local dirs = vim.fn.systemlist(
           "fd --type d --exclude '.*' . " .. vim.fn.shellescape(home)
       )
-
       local config_dirs = vim.fn.systemlist(
           "fd --type d --hidden . " .. vim.fn.shellescape(home .. "\\.config")
       )
-
       vim.list_extend(dirs, config_dirs)
-
       require("fzf-lua").fzf_exec(dirs, {
-          prompt = "Directories> ",
+          prompt = "Dirs> ",
           fzf_opts = {
               ["--height"] = "100%",
               ["--layout"] = "reverse",
-              ["--border"] = "rounded",
+              ["--border"] = "none",
+              ["--margin"] = "0",
+              ["--padding"] = "0",
           },
           actions = {
               ["default"] = function(selected)
                   local dir = selected[1]
-
                   if not dir or dir == "" then
                       return
                   end
-
-                  vim.fn.chdir(vim.fn.trim(dir))
+                  local target = vim.fn.trim(dir)
+                  if new_tab then
+                      vim.cmd.tabnew()
+                      vim.cmd.tcd(target)
+                  else
+                      vim.fn.chdir(target)
+                  end
                   vim.cmd.edit(".")
               end,
           },
       })
-  end)
+  end
 
-  vim.keymap.set('n', '<leader>x', function()
-    require('fff').find_files()
-  end, { desc = 'FFF Find Files' })
+  vim.keymap.set("n", "<C-x>", function()
+      open_dir_picker(false)
+  end, { desc = "Open directory (current tab)" })
+
+  vim.keymap.set("n", "<leader>x", function()
+      open_dir_picker(true)
+  end, { desc = "Open directory (new tab)" })
+
+  -- local dirs_cache = nil
+  -- vim.keymap.set("n", "<C-x>", function()
+      -- local home = vim.fn.expand("$HOME")
+      -- if home == "$HOME" or home == "" then
+          -- home = os.getenv("USERPROFILE") or vim.fn.expand("~")
+      -- end
+      -- home = home:gsub("\\", "/")
+-- 
+      -- if not dirs_cache then
+          -- dirs_cache = {}
+          -- local visited = {}
+          -- local skip = {
+              -- ["node_modules"] = true,
+              -- [".git"] = true,
+              -- ["Temp"] = true,
+              -- ["Packages"] = true,
+              -- ["WindowsApps"] = true,
+              -- ["Microsoft"] = true,
+              -- ["$Recycle.Bin"] = true,
+              -- ["Cache"] = true,
+              -- ["CacheStorage"] = true,
+              -- ["__pycache__"] = true,
+              -- ["venv"] = true,
+              -- [".venv"] = true,
+          -- }
+-- 
+          -- local function scan(path, include_hidden)
+              -- local real = vim.uv.fs_realpath(path)
+              -- if real then
+                  -- if visited[real] then return end
+                  -- visited[real] = true
+              -- end
+-- 
+              -- for name, type in vim.fs.dir(path) do
+                  -- if type == "directory" and not skip[name] then
+                      -- local hidden = name:sub(1, 1) == "."
+                      -- if include_hidden or not hidden then
+                          -- local dir = path .. "/" .. name
+                          -- dirs_cache[#dirs_cache + 1] = dir
+                          -- scan(dir, include_hidden)
+                      -- end
+                  -- end
+              -- end
+          -- end
+-- 
+          -- scan(home, false)
+          -- local config = home .. "/.config"
+          -- if vim.uv.fs_stat(config) then
+              -- dirs_cache[#dirs_cache + 1] = config
+              -- scan(config, true)
+          -- end
+      -- end
+-- 
+      -- require("fzf-lua").fzf_exec(dirs_cache, {
+          -- prompt = "Dirs> ",
+          -- fzf_opts = {
+              -- ["--height"] = "100%",
+              -- ["--layout"] = "reverse",
+              -- ["--border"] = "none",
+              -- ["--margin"] = "0",
+              -- ["--padding"] = "0",
+          -- },
+          -- actions = {
+              -- ["default"] = function(selected)
+                  -- local dir = selected[1]
+                  -- if not dir or dir == "" then
+                      -- return
+                  -- end
+                  -- vim.cmd.cd(vim.fn.fnameescape(vim.fn.trim(dir)))
+                  -- vim.cmd.edit(".")
+              -- end,
+          -- },
+      -- })
+  -- end)
 
   vim.keymap.set('n', '<leader>f', function()
     require('fzf-lua').files()
