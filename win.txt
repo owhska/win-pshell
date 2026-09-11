@@ -71,3 +71,24 @@ function gg {
     $url = "https://www.google.com/search?q=" + [uri]::EscapeDataString($query)
     Start-Process $url
 }
+
+function yt {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Termo)
+    if (-not $Termo) { Write-Host "Uso: yt termo de pesquisa"; return }
+    $query = ($Termo -join " ")
+    Start-Process ("https://www.youtube.com/results?search_query=" + [uri]::EscapeDataString($query))
+}
+
+function gh {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Termo)
+    if (-not $Termo) { Write-Host "Uso: gh termo de pesquisa"; return }
+    $query = ($Termo -join " ")
+    Start-Process ("https://github.com/search?q=" + [uri]::EscapeDataString($query) + "&type=repositories")
+}
+
+function so {
+    param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Termo)
+    if (-not $Termo) { Write-Host "Uso: so termo de pesquisa"; return }
+    $query = ($Termo -join " ")
+    Start-Process ("https://stackoverflow.com/search?q=" + [uri]::EscapeDataString($query))
+}
