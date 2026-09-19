@@ -100,6 +100,7 @@ nnoremap <leader>e :Lexplore<CR>
 "nnoremap <leader>f :e<Space>
 nnoremap <leader>wq :q<CR>
 nnoremap <leader>ww :w<CR>
+nnoremap <leader>q :tabclose<CR>
 nnoremap <C-a> gg<S-v>G
 nnoremap <leader>s :execute "vimgrep /" . input("Search: ") . "/g %" \| copen<CR>
 
@@ -198,6 +199,30 @@ xnoremap <S-h> ^
 nnoremap <S-l> g_
 onoremap <S-l> g_
 xnoremap <S-l> g_
+
+nnoremap <silent> <leader><Tab>   :tabnext<CR>
+nnoremap <silent> <leader><S-Tab> :tabprevious<CR>
+nnoremap <silent> <C-p> :tabe \| :Ex<CR>
+
+" Espaço + gs: Abre o Git Status em um terminal à direita
+nnoremap <leader>gs :vertical terminal git status<CR>
+
+" Espaço + gl: Abre o Git Log em um terminal à direita
+nnoremap <leader>gl :vertical terminal git log --oneline<CR>
+
+" Espaço + gd: Abre o Git Diff em tela cheia ocupando 100% da nova aba
+nnoremap <leader>gd :tab terminal git diff<CR>
+
+" Se você usa o <leader><Tab> no modo normal, garanta que ele funcione no terminal:
+tnoremap <leader><Tab> <C-\><C-n><leader><Tab>
+
+" Se você usa o Shift + Seta para alternar abas/buffers, adicione também:
+tnoremap <S-Right> <C-\><C-n>:bnext<CR>
+tnoremap <S-Left> <C-\><C-n>:bprevious<CR>
+
+" Se você quiser alternar abas nativas do Vim no terminal (caso use :tabnext):
+tnoremap <C-PageDown> <C-\><C-n>:tabnext<CR>
+tnoremap <C-PageUp> <C-\><C-n>:tabprevious<CR>
 
 " Espaço + cf copia o caminho/nome do arquivo atual para a área de transferência
 nnoremap <leader>cf :let @+ = expand("%")<CR>
