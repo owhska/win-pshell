@@ -60,7 +60,7 @@ let g:netrw_liststyle=3
 let g:netrw_winsize=35
 let g:netrw_browse_split=0
 
-colorscheme default
+colorscheme pablo
 
 highlight LineNr ctermfg=255
 highlight SpecialKey ctermfg=235
@@ -89,6 +89,100 @@ endfunction
 
 " Ativa o gatilho automático apenas para arquivos de programação suportados
 autocmd FileType javascript,python,c,cpp,html,css,vim autocmd InsertCharPre <buffer> call DispararOmniAutomatico()
+
+let s:repo_cache = {}
+
+" Retorna [nome_do_repo_ou_home, raiz_do_repo] para um cwd
+function! s:GetRepoInfo(cwd) abort
+    if has_key(s:repo_cache, a:cwd)
+        return s:repo_cache[a:cwd]
+    endif
+
+    let l:root = []
+    try
+        let l:root = systemlist('git -C ' . shellescape(a:cwd) . ' rev-parse --show-toplevel 2>/dev/null')
+    catch
+        let l:root = []
+    endtry
+
+    if v:shell_error == 0 && !empty(l:root)
+        let l:name = fnamemodify(l:root[0], ':t')
+        let l:info = [l:name, l:root[0]]
+    else
+        " Sem git: usa o cwd como raiz
+        let l:info = [fnamemodify(a:cwd, ':t'), a:cwd]
+    endif
+
+    let s:repo_cache[a:cwd] = l:info
+    return l:info
+endfunction
+
+function! s:UpdateRepoCache() abort
+    let l:cwd = getcwd()
+    if !has_key(s:repo_cache, l:cwd)
+        call s:GetRepoInfo(l:cwd)
+    endif
+endfunction
+
+augroup TablineRepoCache
+    autocmd!
+    autocmd VimEnter,DirChanged,BufEnter * call s:UpdateRepoCache()
+augroup END
+
+function! s:IsDiffviewTab(tabnr) abort
+    for bufnr in tabpagebuflist(a:tabnr)
+        if getbufvar(bufnr, '&filetype') =~# '^Diffview'
+            return 1
+        endif
+    endfor
+    return 0
+endfunction
+
+function! NvimTabLine() abort
+    let l:s = ''
+
+    for i in range(1, tabpagenr('$'))
+        let l:winnr   = tabpagewinnr(i)
+        let l:buflist = tabpagebuflist(i)
+        let l:bufnr   = l:buflist[l:winnr - 1]
+        let l:cwd     = getcwd(-1, i)
+        let l:info    = s:GetRepoInfo(l:cwd)
+        let l:repo    = l:info[0]
+        let l:root    = l:info[1]
+
+        if s:IsDiffviewTab(i)
+            let l:label = 'Diff: ' . l:repo
+        else
+            let l:fname = bufname(l:bufnr)
+            if l:fname != ''
+                let l:abs = fnamemodify(l:fname, ':p')
+                " Caminho relativo à raiz do repo/home
+                if stridx(l:abs, l:root . '/') == 0
+                    let l:rel = strpart(l:abs, strlen(l:root) + 1)
+                else
+                    let l:rel = fnamemodify(l:abs, ':t')
+                endif
+                " Se o rel for igual ao cwd, mostra só o basename
+                let l:label = l:repo . ' - ' . l:rel
+            else
+                let l:label = l:repo . ' - [No Name]'
+            endif
+        endif
+
+        if i == tabpagenr()
+            let l:s .= '%#TabLineSel#'
+        else
+            let l:s .= '%#TabLine#'
+        endif
+
+        let l:s .= '%' . i . 'T' . ' ' . l:label . ' '
+    endfor
+
+    let l:s .= '%#TabLineFill#'
+    return l:s
+endfunction
+
+set tabline=%!NvimTabLine()
 
 " ============================================
 " ATALHOS
