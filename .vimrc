@@ -159,7 +159,7 @@ vnoremap <leader>m :<C-u>call <SID>ToggleComment()<CR>
 nnoremap <C-e> :b <C-d>
 
 " Espaço + g busca uma palavra em todos os arquivos do diretório atual e subpastas
-nnoremap <leader>g :execute "vimgrep /" . input("Search ALL: ") . "/g **/*" \| copen<CR>
+nnoremap <leader>gg :execute "vimgrep /" . input("Search ALL: ") . "/g **/*" \| copen<CR>
 
 " Versão alternativa ultra-rápida (usa o motor de busca do sistema)
 "nnoremap <leader>g :execute "grep! " . shellescape(input("Buscar no projeto: ")) \| copen<CR>
