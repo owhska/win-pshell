@@ -83,6 +83,13 @@ nnoremap <leader>wq :q<CR>
 nnoremap <leader>ww :w<CR>
 nnoremap <C-a> gg<S-v>G
 
+set splitright
+nnoremap <leader>t :vertical terminal<CR>
+
+" Permite usar Ctrl+W para navegar e sair do terminal facilmente
+tnoremap <C-w>h <C-\><C-n><C-w>h
+tnoremap <C-w>l <C-\><C-n><C-w>l
+
 " Auto-fechamento
 inoremap ( ()<Left>
 inoremap { {}<Left>
