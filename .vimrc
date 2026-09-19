@@ -77,7 +77,8 @@ highlight NonText ctermfg=238 ctermbg=NONE
 
 let mapleader = " "
 nnoremap <leader>e :e .<CR>
-nnoremap <leader>f :Files<CR>
+nnoremap <leader>f :e<Space>
+nnoremap <leader>b :ls<CR>:b<space>
 nnoremap <leader>wq :q<CR>
 nnoremap <leader>ww :w<CR>
 nnoremap <C-a> gg<S-v>G
