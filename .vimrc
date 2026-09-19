@@ -26,9 +26,10 @@ set tabstop=4
 set shiftwidth=4
 set list
 " ⭐ REMOVIDO: set listchars=tab:~·,trail:·
-set clipboard=unnamed
+"set clipboard=unnamed
 set guicursor=  " Desativa controle de cursor no terminal
-set clipboard=unnamedplus
+"set clipboard=unnamedplus
+set clipboard=unnamed,unnamedplus
 
 " ============================================
 " FUNÇÕES E STATUS
@@ -57,6 +58,7 @@ syntax on
 let g:netrw_banner=0
 let g:netrw_liststyle=3
 let g:netrw_winsize=35
+let g:netrw_browse_split=0
 
 colorscheme default
 
@@ -72,18 +74,53 @@ highlight Normal ctermbg=NONE
 highlight NonText ctermfg=238 ctermbg=NONE
 
 " ============================================
+" AUTOCOMPLETE OMNI AUTOMÁTICO (CORRIGIDO)
+" ============================================
+
+set completeopt=menuone,noinsert,noselect
+
+function! DispararOmniAutomatico()
+    " Só dispara se o menu não estiver visível e se o caractere digitado for uma letra/número
+    if !pumvisible() && v:char =~ '\w'
+        " Aguarda o caractere cair na tela antes de injetar o comando <C-x><C-o>
+        call feedkeys("\<C-x>\<C-o>", 'n')
+    endif
+endfunction
+
+" Ativa o gatilho automático apenas para arquivos de programação suportados
+autocmd FileType javascript,python,c,cpp,html,css,vim autocmd InsertCharPre <buffer> call DispararOmniAutomatico()
+
+" ============================================
 " ATALHOS
 " ============================================
 
 let mapleader = " "
-nnoremap <leader>e :e .<CR>
+"nnoremap <leader>e :e .<CR>
+nnoremap <leader>e :Lexplore<CR>
 nnoremap <leader>f :e<Space>
-nnoremap <leader>b :ls<CR>:b<space>
 nnoremap <leader>wq :q<CR>
 nnoremap <leader>ww :w<CR>
 nnoremap <C-a> gg<S-v>G
+nnoremap <leader>s :execute "vimgrep /" . input("Search: ") . "/g %" \| copen<CR>
+
+" Altere sua linha do <leader>b para esta:
+"nnoremap <leader>b :b <C-d>
+""nnoremap <leader>b :ls<CR>:b<space> "versao que seleciona pelo numero
+
+nnoremap <C-e> :b <C-d>
+
+" Espaço + g busca uma palavra em todos os arquivos do diretório atual e subpastas
+nnoremap <leader>g :execute "vimgrep /" . input("Search ALL: ") . "/g **/*" \| copen<CR>
+
+" Versão alternativa ultra-rápida (usa o motor de busca do sistema)
+"nnoremap <leader>g :execute "grep! " . shellescape(input("Buscar no projeto: ")) \| copen<CR>
+
+" Navegar entre buffers com Shift + Seta para Esquerda/Direita
+nnoremap <S-Right> :bnext<CR>
+nnoremap <S-Left> :bprevious<CR>
 
 set splitright
+
 nnoremap <leader>t :vertical terminal<CR>
 
 " Permite usar Ctrl+W para navegar e sair do terminal facilmente
@@ -106,6 +143,55 @@ nnoremap <leader>wl <C-w>l
 nnoremap <leader>wj <C-w>j
 nnoremap <leader>wk <C-w>k
 
+" Shift+H vai para o primeiro caractere da linha / Shift+L vai para o último
+nnoremap <S-h> ^
+onoremap <S-h> ^
+xnoremap <S-h> ^
+nnoremap <S-l> g_
+onoremap <S-l> g_
+xnoremap <S-l> g_
+
+" Espaço + cf copia o caminho/nome do arquivo atual para a área de transferência
+nnoremap <leader>cf :let @+ = expand("%")<CR>
+
+" Centraliza a tela na vertical ao rolar com Ctrl+U e Ctrl+D
+nnoremap <C-u> <C-u>zz
+nnoremap <C-d> <C-d>zz
+
+" Centraliza a tela ao navegar pelas buscas com n e N
+nnoremap n nzzzv
+nnoremap N Nzzzv
+
+" Mantém a seleção visual ativa ao recuar ou avançar blocos com < e >
+vnoremap < <gv
+vnoremap > >gv
+
+" Espaço + lw ativa/desativa a quebra de linha visual (Wrap)
+nnoremap <leader>lw :set wrap!<CR>
+
+" Move blocos de texto selecionados para cima (K) ou para baixo (J) ajustando a indentação
+vnoremap <silent> K :m '<-2<CR>gv=gv
+vnoremap <silent> J :m '>+1<CR>gv=gv
+
+" Faz a tecla 'x' deletar sem jogar o caractere para o clipboard (Registrador Blackhole)
+nnoremap x "_x
+
+" Espaço + rr prepara a substituição global da palavra sob o cursor no arquivo inteiro
+nnoremap <leader>rr :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
+
+" Deleta sem apagar o que já estava copiado no clipboard (Registrador Blackhole)
+nnoremap <leader>dd "_d
+vnoremap <leader>dd "_d
+
+" Cola por cima de uma seleção visual sem perder o texto original que estava copiado
+xnoremap p "_dP
+
+" Redimensiona janelas usando Espaço + Setas do teclado
+nnoremap <leader><left> :vertical resize +20<CR>
+nnoremap <leader><right> :vertical resize -20<CR>
+nnoremap <leader><up> :resize +10<CR>
+nnoremap <leader><down> :resize -10<CR>
+
 " Copiar e Colar
 " Copiar para a área de transferência do Windows usando o atalho universal
 vnoremap <C-c> "+y
@@ -115,6 +201,19 @@ vnoremap <leader>y "+y
 nnoremap <leader>y "+y
 nnoremap <leader>p "+p
 nnoremap <leader>P "+P
+
+" AutoComplete
+" Ativa a detecção do tipo de arquivo e carrega os arquivos de autocomplete nativos
+filetype plugin on
+
+" Ativa o menu flutuante de sugestões (popup) ao completar
+set completeopt=menuone,noinsert,noselect
+
+" Se o menu estiver aberto, Tab avança na lista. Se não, insere Tab normal.
+inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+
+" Se o menu estiver aberto, Shift+Tab volta na lista. Se não, remove recuo normal.
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 
 " ============================================
 " COMPORTAMENTO
@@ -145,6 +244,7 @@ let g:netrw_cygwin=0
 " ============================================
 
 set shell=cmd.exe
+
 set shellcmdflag=/c
 set shellpipe=>
 set shellredir=>
