@@ -100,8 +100,13 @@ filetype plugin on
 set completeopt=menuone,noinsert,noselect
 
 function! DispararOmniAutomatico()
-    if !pumvisible() && v:char =~ '\w'
+    if pumvisible() || v:char !~ '\w'
+        return
+    endif
+    if &omnifunc !=# ''
         call feedkeys("\<C-x>\<C-o>", 'n')
+    else
+        call feedkeys("\<C-x>\<C-n>", 'n')
     endif
 endfunction
 
@@ -221,7 +226,8 @@ set tabline=%!NvimTabLine()
 " ============================================
 
 let mapleader = " "
-nnoremap <leader>e :Ex<CR>
+
+nnoremap <leader>e :let g:netrw_chgwin = -1 \| let g:netrw_browse_split = 0 \| Ex<CR>
 nnoremap <leader>b :Lexplore<CR>
 nnoremap <leader>f :e<Space>
 nnoremap <leader>wq :q<CR>
@@ -427,14 +433,14 @@ if g:is_windows
     set fileformats=dos,unix
     set shellslash
     " cmd.exe é o padrão mais estável no Windows puro
-    set shell=cmd.exe
+    set shell=pwsh.exe
     set shellcmdflag=/c
     set shellpipe=>
     set shellredir=>
 else
     set fileformats=unix,dos
     " No Linux, usa o shell do ambiente (bash/zsh)
-    set shell=/bin/sh
+    set shell=/bin/bash
     set shellcmdflag=-c
     set shellpipe=2>&1\ \|\ tee
     set shellredir=>
