@@ -191,7 +191,7 @@ set tabline=%!NvimTabLine()
 let mapleader = " "
 "nnoremap <leader>e :e .<CR>
 nnoremap <leader>e :Lexplore<CR>
-"nnoremap <leader>f :e<Space>
+nnoremap <leader>f :e<Space>
 nnoremap <leader>wq :q<CR>
 nnoremap <leader>ww :w<CR>
 nnoremap <leader>q :tabclose<CR>
@@ -202,7 +202,25 @@ set path+=**
 set wildignore+=*/node_modules/*,*/.git/*,*/dist/*,*/build/*,*.exe,*.dll
 
 " Espaço + f busca arquivos por nome em todo o projeto com preview em lista embaixo
-nnoremap <leader>f :execute "vimgrep! /\\%^/ **/*" . input("Search files: ") . "*" \| copen<CR>
+" nnoremap <leader>gf :execute "vimgrep! /\\%^/ **/*" . input("Search files: ") . "*" \| copen<CR>
+
+nnoremap <leader>gf :call SearchFiles()<CR>
+
+function! SearchFiles()
+  let l:pattern = input("Search files: ")
+  " Se cancelou com ESC ou deixou vazio, não faz nada
+  if empty(l:pattern)
+    echo "Search failed"
+    return
+  endif
+  try
+    execute "vimgrep! /\\%^/ **/*" . l:pattern . "*"
+    copen
+  catch /^Vim:Interrupt$/
+    echo "Search interrupted"
+    cclose
+  endtry
+endfunction
 
 function! s:ToggleComment() abort
     let l:cs = &commentstring
