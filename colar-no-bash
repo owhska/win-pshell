@@ -1,1 +1,3 @@
 echo "Window=max" >> ~/.minttyrc
+echo "CursorType=block" >> ~/.minttyrc
+echo "CursorBlinks=no" >> ~/.minttyrc
