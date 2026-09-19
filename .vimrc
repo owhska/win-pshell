@@ -97,11 +97,59 @@ autocmd FileType javascript,python,c,cpp,html,css,vim autocmd InsertCharPre <buf
 let mapleader = " "
 "nnoremap <leader>e :e .<CR>
 nnoremap <leader>e :Lexplore<CR>
-nnoremap <leader>f :e<Space>
+"nnoremap <leader>f :e<Space>
 nnoremap <leader>wq :q<CR>
 nnoremap <leader>ww :w<CR>
 nnoremap <C-a> gg<S-v>G
 nnoremap <leader>s :execute "vimgrep /" . input("Search: ") . "/g %" \| copen<CR>
+
+set path+=**
+set wildignore+=*/node_modules/*,*/.git/*,*/dist/*,*/build/*,*.exe,*.dll
+
+" Espaço + f busca arquivos por nome em todo o projeto com preview em lista embaixo
+nnoremap <leader>f :execute "vimgrep! /\\%^/ **/*" . input("Search files: ") . "*" \| copen<CR>
+
+function! s:ToggleComment() abort
+    let l:cs = &commentstring
+    let l:prefix = matchstr(l:cs, '^.\{-}\ze\s*%s')
+
+    if empty(l:prefix)
+        echohl WarningMsg | echom "Invalid commentstring: " . l:cs | echohl None
+        return
+    endif
+
+    let l:start_line = line("'<")
+    let l:end_line   = line("'>")
+    if l:start_line > l:end_line
+        let [l:start_line, l:end_line] = [l:end_line, l:start_line]
+    endif
+
+    let l:all_commented = 1
+    let l:prefix_esc = escape(l:prefix, '\.*$^~[]')
+    for i in range(l:start_line, l:end_line)
+        let l = getline(i)
+        if l !~# '^\s*' . l:prefix_esc
+            let l:all_commented = 0
+            break
+        endif
+    endfor
+
+    for i in range(l:start_line, l:end_line)
+        let l = getline(i)
+        if l:all_commented
+            let l:new = substitute(l, '^\s*\zs' . l:prefix_esc . '\s\?', '', '')
+        else
+            let l:indent = matchstr(l, '^\s*')
+            let l:rest   = l[len(l:indent):]
+            let l:new    = l:indent . l:prefix . ' ' . l:rest
+        endif
+        call setline(i, l:new)
+    endfor
+
+    execute "normal! \<Esc>"
+endfunction
+
+vnoremap <leader>m :<C-u>call <SID>ToggleComment()<CR>
 
 " Altere sua linha do <leader>b para esta:
 "nnoremap <leader>b :b <C-d>
