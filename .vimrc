@@ -314,7 +314,22 @@ xnoremap <S-l> g_
 
 nnoremap <silent> <leader><Tab>   :tabnext<CR>
 nnoremap <silent> <leader><S-Tab> :tabprevious<CR>
-nnoremap <silent> <C-p> :tabe \| :Ex<CR>
+
+nnoremap <silent> <C-p> :call <SID>AbrirExplorerNovaAba()<CR>
+
+function! s:AbrirExplorerNovaAba() abort
+    tabedit
+    let w:ctrlp_explorer = 1
+    Explore
+endfunction
+
+augroup CtrlPExplorerClose
+    autocmd!
+    autocmd BufWinEnter * if get(w:, 'ctrlp_explorer', 0) && &filetype !=# 'netrw'
+                \ | let w:ctrlp_explorer = 0
+                \ | if winnr('$') > 1 | only | endif
+                \ | endif
+augroup END
 
 " Espaço + gs: Abre o Git Status em um terminal à direita
 nnoremap <leader>gs :vertical terminal git status<CR>
