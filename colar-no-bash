@@ -1,0 +1,1 @@
+echo "Window=max" >> ~/.minttyrc
