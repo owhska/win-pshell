@@ -1,0 +1,208 @@
+set noerrorbells
+set novisualbell
+set t_vb=
+set belloff=all
+set backspace=indent,eol,start
+set shortmess+=cI
+set t_te=
+set listchars=tab:»\ ,trail:·,extends:>,precedes:<,nbsp:+
+
+set smartindent
+set autoindent
+set incsearch
+set hlsearch
+set ignorecase
+set smartcase
+set showcmd
+set mouse=a
+set encoding=utf-8
+set backspace=indent,eol,start
+set clipboard=unnamed,unnamedplus
+
+function! Modified_Get()
+    return &modified ? '[+]' : '[?]'
+endfunction
+
+set statusline=\ [FILENAME:\ %t]
+set statusline+=\ %=
+set statusline+=\ [TYPE:\ %Y]
+set statusline+=\ [LINE:\ %l/%L\ :\ %c]
+set statusline+=\ [%p%%]
+set statusline+=\ %{Modified_Get()}\ 
+set laststatus=2
+set shortmess+=atI
+set cmdheight=1
+
+set noswapfile
+set tabstop=4
+set shiftwidth=4
+"set list
+set nolist
+set guicursor=
+
+let g:netrw_banner=0
+let g:netrw_liststyle=3
+let g:netrw_browse_split=0
+
+let mapleader = " "
+let maplocalleader = "\\"
+
+nnoremap <silent> <leader>e :Ex<CR>
+
+nnoremap <silent> <leader><Tab>   :tabnext<CR>
+nnoremap <silent> <leader><S-Tab> :tabprevious<CR>
+nnoremap <silent> <leader>t :term<CR>
+nnoremap <silent> <C-p> :tabe \| :Ex<CR>
+nnoremap <silent> <leader>ww :w<CR>
+nnoremap <leader>f :e<Space>
+nnoremap <leader>wq :q<CR>
+nnoremap <leader>ww :w<CR>
+nnoremap <leader>q :tabclose<CR>
+nnoremap <C-a> gg<S-v>G
+nnoremap <leader>s :execute "vimgrep /" . input("Search: ") . "/g %" \| copen<CR>
+nnoremap <C-e> :b <C-d>
+nnoremap <S-Right> :bnext<CR>
+nnoremap <S-Left>  :bprevious<CR>
+
+tnoremap <C-w>h <C-\><C-n><C-w>h
+tnoremap <C-w>l <C-\><C-n><C-w>l
+
+inoremap ( ()<Left>
+inoremap { {}<Left>
+inoremap [ []<Left>
+inoremap " ""<Left>
+inoremap ' ''<Left>
+inoremap < <><Left>
+
+nnoremap <leader>wv :vsplit<CR>
+nnoremap <leader>ws :split<CR>
+nnoremap <leader>wh <C-w>h
+nnoremap <leader>wl <C-w>l
+nnoremap <leader>wj <C-w>j
+nnoremap <leader>wk <C-w>k
+
+nnoremap <S-h> ^
+onoremap <S-h> ^
+xnoremap <S-h> ^
+nnoremap <S-l> g_
+onoremap <S-l> g_
+xnoremap <S-l> g_
+
+vnoremap <silent> K :m '<-2<CR>gv=gv
+vnoremap <silent> J :m '>+1<CR>gv=gv
+
+inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+
+nnoremap <leader>rr :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
+
+nnoremap <leader><left>  :vertical resize +20<CR>
+nnoremap <leader><right> :vertical resize -20<CR>
+nnoremap <leader><up>    :resize +10<CR>
+nnoremap <leader><down>  :resize -10<CR>
+
+nnoremap <leader>ll :set list!<CR>
+
+vnoremap <C-c> "+y
+vnoremap <leader>y "+y
+nnoremap <leader>y "+y
+nnoremap <leader>p "+p
+nnoremap <leader>P "+P
+
+set t_Co=256
+syntax on
+set background=dark
+colorscheme default
+
+highlight Normal        guifg=#c8ccd4 guibg=#1b1f27 ctermfg=250 ctermbg=235
+highlight LineNr        guifg=#4c566a guibg=#1b1f27 ctermfg=240 ctermbg=235
+highlight CursorLineNr  guifg=#d8dee9 guibg=#232833 ctermfg=253 ctermbg=236 cterm=bold gui=bold
+highlight CursorLine    guibg=#232833 ctermbg=236 cterm=NONE gui=NONE
+highlight CursorColumn  guibg=#232833 ctermbg=236 cterm=NONE gui=NONE
+
+highlight NonText       guifg=#2e3440 guibg=NONE ctermfg=238
+highlight SpecialKey    guifg=#2e3440 guibg=NONE ctermfg=238
+highlight EndOfBuffer   guifg=#1b1f27 guibg=NONE ctermfg=235
+highlight Whitespace    guifg=#2e3440 guibg=NONE
+
+highlight VertSplit     guifg=#2e3440 guibg=#1b1f27 ctermfg=238 ctermbg=235 cterm=NONE gui=NONE
+highlight StatusLine    guifg=#c8ccd4 guibg=#2a303c ctermfg=250 ctermbg=237 cterm=NONE gui=NONE
+highlight StatusLineNC  guifg=#616e88 guibg=#232833 ctermfg=242 ctermbg=236 cterm=NONE gui=NONE
+highlight TabLine       guifg=#616e88 guibg=#232833 ctermfg=242 ctermbg=236
+highlight TabLineSel    guifg=#c8ccd4 guibg=#2a303c ctermfg=250 ctermbg=237 cterm=bold gui=bold
+highlight TabLineFill   guibg=#1b1f27 ctermbg=235
+
+highlight Visual        guibg=#3b4252 guifg=NONE ctermbg=238 gui=NONE
+highlight Search        guibg=#4a4630 guifg=#e5e9f0 ctermbg=58 ctermfg=253
+highlight IncSearch     guibg=#7a6a2e guifg=#1b1f27 ctermbg=100 ctermfg=235 cterm=bold gui=bold
+highlight MatchParen    guibg=#3b4252 guifg=#88c0d0 ctermbg=238 ctermfg=110 cterm=bold gui=bold
+
+highlight Pmenu         guifg=#c8ccd4 guibg=#232833 ctermfg=250 ctermbg=236
+highlight PmenuSel      guifg=#1b1f27 guibg=#88c0d0 ctermfg=235 ctermbg=110 cterm=bold gui=bold
+highlight PmenuSbar     guibg=#2e3440 ctermbg=238
+highlight PmenuThumb    guibg=#4c566a ctermbg=240
+
+highlight Folded        guifg=#616e88 guibg=#232833 ctermfg=242 ctermbg=236
+highlight SignColumn    guibg=#1b1f27 ctermbg=235
+highlight ColorColumn   guibg=#232833 ctermbg=236
+
+highlight Comment       guifg=#5c6a76 guibg=NONE ctermfg=242 cterm=NONE gui=NONE
+highlight Constant      guifg=#a3be8c ctermfg=144 gui=NONE
+highlight String        guifg=#a3be8c ctermfg=144 gui=NONE
+highlight Character     guifg=#a3be8c ctermfg=144 gui=NONE
+highlight Number        guifg=#d0a878 ctermfg=180 gui=NONE
+highlight Float         guifg=#d0a878 ctermfg=180 gui=NONE
+highlight Boolean       guifg=#d0a878 ctermfg=180 gui=NONE
+
+highlight Identifier    guifg=#c8ccd4 ctermfg=250 gui=NONE
+highlight Function      guifg=#88c0d0 ctermfg=110 gui=NONE
+
+highlight Statement     guifg=#b48ead ctermfg=139 gui=NONE
+highlight Conditional   guifg=#b48ead ctermfg=139 gui=NONE
+highlight Repeat        guifg=#b48ead ctermfg=139 gui=NONE
+highlight Exception     guifg=#b48ead ctermfg=139 gui=NONE
+highlight Label         guifg=#b48ead ctermfg=139 gui=NONE
+highlight Keyword       guifg=#b48ead ctermfg=139 gui=NONE
+
+highlight PreProc       guifg=#d08770 ctermfg=173 gui=NONE
+highlight Include       guifg=#d08770 ctermfg=173 gui=NONE
+highlight Define        guifg=#d08770 ctermfg=173 gui=NONE
+highlight Macro         guifg=#d08770 ctermfg=173 gui=NONE
+highlight PreCondit     guifg=#d08770 ctermfg=173 gui=NONE
+
+highlight Type          guifg=#8fbcbb ctermfg=109 gui=NONE
+highlight StorageClass  guifg=#b48ead ctermfg=139 gui=NONE
+highlight Structure     guifg=#8fbcbb ctermfg=109 gui=NONE
+highlight Typedef       guifg=#8fbcbb ctermfg=109 gui=NONE
+
+highlight Operator      guifg=#8b95a5 ctermfg=245 gui=NONE
+highlight Delimiter     guifg=#8b95a5 ctermfg=245 gui=NONE
+highlight Special       guifg=#d0a878 ctermfg=180 gui=NONE
+highlight SpecialChar   guifg=#d0a878 ctermfg=180 gui=NONE
+highlight Tag           guifg=#b48ead ctermfg=139 gui=NONE
+
+highlight Error         guifg=#bf616a guibg=NONE ctermfg=131 cterm=bold gui=bold
+highlight Todo          guifg=#1b1f27 guibg=#ebcb8b ctermfg=235 ctermbg=186 cterm=bold gui=bold
+
+set completeopt=menuone,noinsert,noselect
+
+function! DispararOmniAutomatico()
+    if pumvisible() || v:char !~ '\w'
+        return
+    endif
+    if &omnifunc !=# ''
+        call feedkeys("\<C-x>\<C-o>", 'n')
+    else
+        call feedkeys("\<C-x>\<C-n>", 'n')
+    endif
+endfunction
+
+augroup OmniAuto
+    autocmd!
+    autocmd FileType javascript,python,c,cpp,html,css,vim
+                \ autocmd InsertCharPre <buffer> call DispararOmniAutomatico()
+augroup END
+
+
+
+
