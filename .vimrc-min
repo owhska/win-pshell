@@ -1,0 +1,253 @@
+set noerrorbells
+set novisualbell
+set t_vb=
+set belloff=all
+set backspace=indent,eol,start
+set shortmess+=cI
+set t_te=
+set listchars=tab:»\ ,trail:·,extends:>,precedes:<,nbsp:+
+
+set smartindent
+set autoindent
+set incsearch
+set hlsearch
+set ignorecase
+set smartcase
+set showcmd
+set mouse=a
+set encoding=utf-8
+set backspace=indent,eol,start
+set clipboard=unnamed,unnamedplus
+
+function! Modified_Get()
+    return &modified ? '[+]' : '[]'
+endfunction
+
+" set statusline=\ [FILENAME:\ %t]
+" set statusline+=\ %=
+" set statusline+=\ [TYPE:\ %Y]
+" set statusline+=\ [LINE:\ %l/%L\ :\ %c]
+" set statusline+=\ [%p%%]
+" set statusline+=\ %{Modified_Get()}\ 
+" set laststatus=2
+" set shortmess+=atI
+" set cmdheight=1
+" set laststatus=0
+
+" set showtabline=2
+" set tabline=\ [FILENAME:\ %t]
+" set tabline+=\ %=
+" set tabline+=\ [TYPE:\ %Y]
+" set tabline+=\ [LINE:\ %l/%L\ :\ %c]
+" set tabline+=\ [%p%%]
+" set tabline+=\ %{Modified_Get()}\ 
+" 
+" set laststatus=0
+
+set showtabline=2
+set laststatus=0
+
+function! MyTabLine()
+    let s = ''
+    for i in range(1, tabpagenr('$'))
+        let buflist = tabpagebuflist(i)
+        let name = fnamemodify(bufname(buflist[tabpagewinnr(i) - 1]), ':t')
+        let s .= (i == tabpagenr() ? '%#TabLineSel#' : '%#TabLine#')
+        let s .= ' ' . (empty(name) ? '[No Name]' : name) . ' '
+    endfor
+    let s .= '%#TabLineFill#%='
+    let s .= ' [TYPE: %Y] [LINE: %l/%L : %c] [%p%%] %{Modified_Get()} '
+    return s
+endfunction
+
+set tabline=%!MyTabLine()
+
+
+set noswapfile
+set tabstop=4
+set shiftwidth=4
+"set list
+set nolist
+set guicursor=
+
+let g:netrw_banner=0
+let g:netrw_liststyle=3
+let g:netrw_browse_split=0
+
+let mapleader = " "
+let maplocalleader = "\\"
+
+nnoremap <silent> <leader>e :Ex<CR>
+
+nnoremap <silent> <leader><Tab>   :tabnext<CR>
+nnoremap <silent> <leader><S-Tab> :tabprevious<CR>
+nnoremap <silent> <leader>t :term<CR>
+nnoremap <silent> <C-p> :tabe \| :Ex<CR>
+nnoremap <silent> <leader>ww :w<CR>
+nnoremap <leader>f :e<Space>
+nnoremap <leader>wq :q<CR>
+nnoremap <leader>ww :w<CR>
+nnoremap <leader>q :tabclose<CR>
+nnoremap <C-a> gg<S-v>G
+nnoremap <leader>s :execute "vimgrep /" . input("Search: ") . "/g %" \| copen<CR>
+nnoremap <C-e> :b <C-d>
+nnoremap <S-Right> :bnext<CR>
+nnoremap <S-Left>  :bprevious<CR>
+
+tnoremap <C-w>h <C-\><C-n><C-w>h
+tnoremap <C-w>l <C-\><C-n><C-w>l
+
+inoremap ( ()<Left>
+inoremap { {}<Left>
+inoremap [ []<Left>
+inoremap " ""<Left>
+inoremap ' ''<Left>
+inoremap < <><Left>
+
+nnoremap dd "_dd
+vnoremap d "_d
+
+nnoremap <leader>wv :vsplit<CR>
+nnoremap <leader>ws :split<CR>
+nnoremap <leader>wh <C-w>h
+nnoremap <leader>wl <C-w>l
+nnoremap <leader>wj <C-w>j
+nnoremap <leader>wk <C-w>k
+
+nnoremap <S-h> ^
+onoremap <S-h> ^
+xnoremap <S-h> ^
+nnoremap <S-l> g_
+onoremap <S-l> g_
+xnoremap <S-l> g_
+
+vnoremap <silent> K :m '<-2<CR>gv=gv
+vnoremap <silent> J :m '>+1<CR>gv=gv
+
+inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+
+nnoremap <leader>rr :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
+
+nnoremap <leader><left>  :vertical resize +20<CR>
+nnoremap <leader><right> :vertical resize -20<CR>
+nnoremap <leader><up>    :resize +10<CR>
+nnoremap <leader><down>  :resize -10<CR>
+
+nnoremap <leader>ll :set list!<CR>
+
+vnoremap <C-c> "+y
+vnoremap <leader>y "+y
+nnoremap <leader>y "+y
+nnoremap <leader>p "+p
+nnoremap <leader>P "+P
+
+set t_Co=256
+syntax on
+set background=dark
+colorscheme default
+
+highlight Normal ctermbg=NONE guibg=NONE
+"highlight Normal       ctermfg=188 ctermbg=234 guifg=#d4d4d4 guibg=#1e1e1e
+highlight LineNr       ctermfg=102 ctermbg=NONE guifg=#858585 guibg=NONE
+highlight CursorLine   ctermbg=235 guibg=#2a2d2e cterm=NONE gui=NONE
+highlight CursorLineNr ctermfg=251 ctermbg=NONE guifg=#c6c6c6 guibg=NONE cterm=bold gui=bold
+highlight NonText      ctermfg=238 ctermbg=NONE guifg=#3b3b3b guibg=NONE
+highlight SpecialKey   ctermfg=238 ctermbg=NONE guifg=#3b3b3b guibg=NONE
+highlight EndOfBuffer  ctermfg=234 ctermbg=NONE guifg=#1e1e1e guibg=NONE
+highlight StatusLine   ctermfg=231 ctermbg=238 guifg=#ffffff guibg=#3c3c3c cterm=NONE gui=NONE
+highlight StatusLineNC ctermfg=102 ctermbg=235 guifg=#858585 guibg=#252526 cterm=NONE gui=NONE
+highlight VertSplit    ctermfg=238 ctermbg=234 guifg=#444444 guibg=#1e1e1e cterm=NONE gui=NONE
+highlight Visual       ctermfg=NONE ctermbg=24 guifg=NONE guibg=#264f78
+highlight Search       ctermfg=NONE ctermbg=59 guifg=NONE guibg=#515c6a
+highlight MatchParen   ctermfg=NONE ctermbg=238 guifg=NONE guibg=#3a3d41 cterm=bold gui=bold
+highlight Pmenu        ctermfg=188 ctermbg=235 guifg=#d4d4d4 guibg=#252526
+highlight PmenuSel     ctermfg=231 ctermbg=24  guifg=#ffffff guibg=#04395e
+highlight Comment      ctermfg=65  guifg=#6a9955 cterm=NONE gui=NONE
+highlight Constant     ctermfg=74  guifg=#4fc1ff cterm=NONE gui=NONE
+highlight String       ctermfg=174 guifg=#ce9178 cterm=NONE gui=NONE
+highlight Character    ctermfg=174 guifg=#ce9178 cterm=NONE gui=NONE
+highlight Number       ctermfg=151 guifg=#b5cea8 cterm=NONE gui=NONE
+highlight Float        ctermfg=151 guifg=#b5cea8 cterm=NONE gui=NONE
+highlight Boolean      ctermfg=74  guifg=#569cd6 cterm=NONE gui=NONE
+highlight Identifier   ctermfg=117 guifg=#9cdcfe cterm=NONE gui=NONE
+highlight Function     ctermfg=187 guifg=#dcdcaa cterm=NONE gui=NONE
+highlight Statement    ctermfg=74  guifg=#569cd6 cterm=NONE gui=NONE
+highlight Conditional  ctermfg=176 guifg=#c586c0 cterm=NONE gui=NONE
+highlight Repeat       ctermfg=176 guifg=#c586c0 cterm=NONE gui=NONE
+highlight Exception    ctermfg=176 guifg=#c586c0 cterm=NONE gui=NONE
+highlight Include      ctermfg=176 guifg=#c586c0 cterm=NONE gui=NONE
+highlight Operator     ctermfg=188 guifg=#d4d4d4 cterm=NONE gui=NONE
+highlight Delimiter    ctermfg=188 guifg=#d4d4d4 cterm=NONE gui=NONE
+highlight PreProc      ctermfg=176 guifg=#c586c0 cterm=NONE gui=NONE
+highlight Macro        ctermfg=176 guifg=#c586c0 cterm=NONE gui=NONE
+highlight Type         ctermfg=79  guifg=#4ec9b0 cterm=NONE gui=NONE
+highlight StorageClass ctermfg=74  guifg=#569cd6 cterm=NONE gui=NONE
+highlight Structure    ctermfg=79  guifg=#4ec9b0 cterm=NONE gui=NONE
+highlight Special      ctermfg=180 guifg=#d7ba7d cterm=NONE gui=NONE
+highlight Error        ctermfg=203 ctermbg=NONE guifg=#f44747 guibg=NONE cterm=bold gui=bold
+highlight Todo         ctermfg=180 ctermbg=NONE guifg=#d7ba7d guibg=NONE cterm=bold gui=bold
+highlight TabLine     ctermfg=102 ctermbg=235 guifg=#858585 guibg=#252526 cterm=NONE gui=NONE
+highlight TabLineSel  ctermfg=231 ctermbg=238 guifg=#ffffff guibg=#3c3c3c cterm=bold gui=bold
+highlight TabLineFill ctermfg=188 ctermbg=235 guifg=#d4d4d4 guibg=#252526 cterm=NONE gui=NONE
+
+set completeopt=menuone,noinsert,noselect
+
+function! DispararOmniAutomatico()
+    if pumvisible() || v:char !~ '\w'
+        return
+    endif
+    if &omnifunc !=# ''
+        call feedkeys("\<C-x>\<C-o>", 'n')
+    else
+        call feedkeys("\<C-x>\<C-n>", 'n')
+    endif
+endfunction
+
+augroup OmniAuto
+    autocmd!
+    autocmd FileType javascript,python,c,cpp,html,css,vim
+                \ autocmd InsertCharPre <buffer> call DispararOmniAutomatico()
+augroup END
+
+function! s:ToggleComment() abort
+    let l:cs = &commentstring
+    let l:prefix = matchstr(l:cs, '^.\{-}\ze\s*%s')
+
+    if empty(l:prefix)
+        echohl WarningMsg | echom "Invalid commentstring: " . l:cs | echohl None
+        return
+    endif
+
+    let l:start_line = line("'<")
+    let l:end_line   = line("'>")
+    if l:start_line > l:end_line
+        let [l:start_line, l:end_line] = [l:end_line, l:start_line]
+    endif
+
+    let l:all_commented = 1
+    let l:prefix_esc = escape(l:prefix, '\.*$^~[]')
+    for i in range(l:start_line, l:end_line)
+        let l = getline(i)
+        if l !~# '^\s*' . l:prefix_esc
+            let l:all_commented = 0
+            break
+        endif
+    endfor
+
+    for i in range(l:start_line, l:end_line)
+        let l = getline(i)
+        if l:all_commented
+            let l:new = substitute(l, '^\s*\zs' . l:prefix_esc . '\s\?', '', '')
+        else
+            let l:indent = matchstr(l, '^\s*')
+            let l:rest   = l[len(l:indent):]
+            let l:new    = l:indent . l:prefix . ' ' . l:rest
+        endif
+        call setline(i, l:new)
+    endfor
+
+    execute "normal! \<Esc>"
+endfunction
+
+vnoremap <leader>m :<C-u>call <SID>ToggleComment()<CR>
