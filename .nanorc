@@ -1,0 +1,57 @@
+set mouse
+#set linenumbers
+set softwrap
+set atblanks
+set indicator
+set constantshow
+set minibar
+set nohelp
+
+set autoindent
+set tabsize 4
+set tabstospaces
+set afterends
+set matchbrackets "(<[{)>]}"
+
+set positionlog
+
+bind ^S writeout main
+bind ^Q exit main
+bind ^F whereis main
+bind ^N findnext main
+bind ^Z undo main
+bind ^Y redo main
+bind ^A "{firstline}{mark}{lastline}" main
+bind ^C copy main
+bind ^X cut main
+bind ^V paste main
+
+# syntax "generic" ".*"
+# color green "[a-zA-Z_]+"
+# color brightcyan "[0-9]+"
+# color yellow start=""" end="""
+# color brightblue "if|else|for|while|return"
+
+## Generic syntax highlighting
+syntax "generic" ".*"
+
+## Identifiers
+color green "[a-zA-Z_]+"
+
+## Numbers
+color brightcyan "[0-9]+"
+
+## Strings
+color yellow start=""" end="""
+color yellow start="'" end="'"
+
+## Keywords
+color brightblue "if|else|elif|then|fi|for|while|do|done|return|function|class|def|import|from|const|let|var|int|void|char|float|double|struct|include|define"
+
+## Constants
+color brightred "true|false|null|NULL|None|nil"
+
+## Comments
+color brightmagenta "#.*"
+color brightmagenta "//.*"
+
